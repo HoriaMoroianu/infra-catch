@@ -1,57 +1,92 @@
-#include <avr/io.h>
+#include "main.h"
+#include "timers.h"
+
 #include <Arduino.h>
 #include <IRRemote.hpp>
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x27,  16, 2);
+ISR(TIMER1_COMPA_vect) {
+  led_timeout = true; // Set the flag when the timer expires
 
-byte heart[8] = {
-  0b00000,
-  0b01010,
-  0b11111,
-  0b11111,
-  0b11111,
-  0b01110,
-  0b00100,
-  0b00000
-};
-
-void LCD_demo() {
-  lcd.setCursor(0, 0);
-  lcd.print("Lives: ");
-  lcd.write(0);
-  lcd.write(0);
-  lcd.write(0);
-  lcd.write(0);
-  lcd.write(0);
-
-  lcd.setCursor(0, 1);
-  lcd.print("Score: 0");
+  // DEBUG:
+  PORTB ^= (1 << LED3); // Toggle LED3 (for debugging)
 }
 
 int main(void) {
-  // Initialize the Arduino library
-  init();
+  init(); // Initialize the Arduino library for IRRemote
+  initLEDs(); // Set LED pins as output
+  initLedTimer(); // Set up the LED timer1
 
-  // LCD setup
-  lcd.init();
-  lcd.backlight();
-  lcd.createChar(0, heart);
-  LCD_demo();
-  
   // IR receiver setup
-  IrReceiver.begin(2, ENABLE_LED_FEEDBACK);
+  IrReceiver.begin(IRECV_PIN, ENABLE_LED_FEEDBACK);
 
   // Enable serial communication
   Serial.begin(9600);
   Serial.println("Ready to receive IR signals");
   
   while (1) {
-    if (IrReceiver.decode()) {
-      Serial.print("Received: 0x");
-      Serial.println(IrReceiver.decodedIRData.decodedRawData, HEX);
-      IrReceiver.resume();
+    if (led_timeout) {
+      // DEBUG:
+      Serial.println("LED EXPIRED!");
+
+      led_timeout = false; // Reset the flag
+      continue;
     }
+
+    if (!IrReceiver.decode()) {
+      continue; // Continue to wait for IR signal
+    }
+
+    //// IR signal received ////
+
+    // Continue if the decoded data is not available
+    if (!IrReceiver.decodedIRData.decodedRawData) {
+      IrReceiver.resume();
+      continue;
+    }
+  
+    // Check if the pressed button is correct
+    bool match = validateButton(IrReceiver.decodedIRData.command);
+
+    if (match) {
+      // score++
+    } else {
+      // lives--
+    }
+
+    // turn the current led off
+    // choose and turn on the next led
+    // reset the timer
+
+    IrReceiver.resume();
   }
   return 0;
+}
+
+void initLEDs(void) {
+  DDRB |= (1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3);
+  PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
+}
+
+bool validateButton(uint16_t button) {
+  switch (button) {
+    case BTN_START:
+      Serial.println("Start button pressed");
+      return true;
+    case BTN0:
+      Serial.println("Button 0 pressed");
+      return true;
+    case BTN1:
+      Serial.println("Button 1 pressed");
+      return true;
+    case BTN2:
+      Serial.println("Button 2 pressed");
+      return true;
+    case BTN3:
+      Serial.println("Button 3 pressed");
+      return true;
+    default:
+      Serial.println("Unknown button pressed");
+      return false;
+  }
 }
