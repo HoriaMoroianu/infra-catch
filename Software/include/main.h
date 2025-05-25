@@ -5,9 +5,9 @@
 #include <avr/interrupt.h>
 
 // Led pin definitions
-#define LED0 PB4
-#define LED1 PB3
-#define LED2 PB2
+#define LED0 PB3
+#define LED1 PB2
+#define LED2 PB1
 #define LED3 PB0
 
 #define DECODE_NEC
@@ -35,5 +35,10 @@ void initLEDs(void);
  * @returns true if the pressed button is correct, false otherwise.
  */
 bool validateButton(uint16_t button);
+
+/**
+ * Turns on random LED.
+ */
+void chooseNextLED(void);
 
 #endif // MAIN_H

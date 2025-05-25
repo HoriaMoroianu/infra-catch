@@ -1,4 +1,5 @@
 #include "main.h"
+#include "random.h"
 #include "timers.h"
 
 #include <Arduino.h>
@@ -7,29 +8,26 @@
 
 ISR(TIMER1_COMPA_vect) {
   led_timeout = true; // Set the flag when the timer expires
-
-  // DEBUG:
-  PORTB ^= (1 << LED3); // Toggle LED3 (for debugging)
 }
 
 int main(void) {
-  init(); // Initialize the Arduino library for IRRemote
-  initLEDs(); // Set LED pins as output
-  initLedTimer(); // Set up the LED timer1
+  init();           // Initialize the Arduino library for IRRemote
+  initLEDs();       // Set LED pins as output
+  initLedTimer();   // Set up the LED timer1
+  IrReceiver.begin(IRECV_PIN, ENABLE_LED_FEEDBACK);  // IR receiver setup
 
-  // IR receiver setup
-  IrReceiver.begin(IRECV_PIN, ENABLE_LED_FEEDBACK);
+  // DEBUG:
+  Serial.begin(9600); // Enable serial communication
 
-  // Enable serial communication
-  Serial.begin(9600);
-  Serial.println("Ready to receive IR signals");
-  
+  chooseNextLED(); // Choose and turn on a random LED
+
   while (1) {
     if (led_timeout) {
       // DEBUG:
       Serial.println("LED EXPIRED!");
 
       led_timeout = false; // Reset the flag
+      chooseNextLED(); // Choose and turn on the next LED
       continue;
     }
 
@@ -49,15 +47,12 @@ int main(void) {
     bool match = validateButton(IrReceiver.decodedIRData.command);
 
     if (match) {
-      // score++
+      Serial.println("SOCRE++");
     } else {
-      // lives--
+      Serial.println("Wrong button pressed!");
     }
 
-    // turn the current led off
-    // choose and turn on the next led
-    // reset the timer
-
+    chooseNextLED(); // Choose and turn on the next LED
     IrReceiver.resume();
   }
   return 0;
@@ -69,24 +64,36 @@ void initLEDs(void) {
 }
 
 bool validateButton(uint16_t button) {
-  switch (button) {
-    case BTN_START:
-      Serial.println("Start button pressed");
-      return true;
-    case BTN0:
-      Serial.println("Button 0 pressed");
-      return true;
-    case BTN1:
-      Serial.println("Button 1 pressed");
-      return true;
-    case BTN2:
-      Serial.println("Button 2 pressed");
-      return true;
-    case BTN3:
-      Serial.println("Button 3 pressed");
-      return true;
-    default:
-      Serial.println("Unknown button pressed");
-      return false;
+  if (button == BTN0 && bit_is_set(PORTB, LED0)) {
+    PORTB &= ~(1 << LED0);
+    return true;
   }
+  if (button == BTN1 && bit_is_set(PORTB, LED1)) {
+    PORTB &= ~(1 << LED1);
+    return true;
+  }
+  if (button == BTN2 && bit_is_set(PORTB, LED2)) {
+    PORTB &= ~(1 << LED2);
+    return true;
+  }
+  if (button == BTN3 && bit_is_set(PORTB, LED3)) {
+    PORTB &= ~(1 << LED3);
+    return true;
+  }
+  return false;
+}
+
+void chooseNextLED(void) {
+  PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3)); // Turn off all LEDs
+
+  // TODO: delay before choosing the next LED
+
+  switch (nextRand() & 0b11) {
+    case 0: PORTB |= (1 << LED0); break;
+    case 1: PORTB |= (1 << LED1); break;
+    case 2: PORTB |= (1 << LED2); break;
+    case 3: PORTB |= (1 << LED3); break;
+    default: PORTB |= (1 << LED0);
+  }
+  startLedTimer();  // Restart the LED timer
 }
