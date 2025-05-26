@@ -19,12 +19,37 @@
 enum IRCode {
     BTN_START = 0x9,
     BTN0 = 0xC,
-    BTN1 = 0x5E,
-    BTN2 = 0x42,
-    BTN3 = 0x4A
+    BTN1 = 0x18,
+    BTN2 = 0x8,
+    BTN3 = 0x1C
 };
 
-bool led_timeout = false; // Flag to indicate if the LED timer has timed out
+// Game states
+enum GameState {
+  GAME_START,
+  GAME_PLAYING,
+  GAME_OVER
+};
+
+/**
+ * Filters the received IR signal and sets the global variable `valid_ir` to true if the signal is valid.
+ */
+void filterIRSignal();
+
+/**
+ * Handles the game start logic.
+ */
+void handleStart();
+
+/**
+ * Handles the game playing logic.
+ */
+void hadlePlay();
+
+/**
+ * Handles the game over logic.
+ */
+void handleGameOver();
 
 /**
  * Initializes the LED pins as output and sets them to low.

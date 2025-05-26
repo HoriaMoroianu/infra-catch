@@ -1,6 +1,6 @@
 #include "timers.h"
 
-uint16_t led_delay = 20000; // 1.28 seconds at 16MHz with 1024 prescaler
+uint16_t led_delay = 31250; // 2 seconds at 16MHz with 1024 prescaler
 
 void initLedTimer(void) {
   TCCR1A = 0; // Clear control register A

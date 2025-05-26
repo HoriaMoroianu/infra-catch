@@ -6,6 +6,10 @@
 #include <IRRemote.hpp>
 #include <LiquidCrystal_I2C.h>
 
+GameState game_state = GAME_START; // Initial game state
+bool valid_ir = false;      // Flag to indicate if a valid IR signal has been received
+bool led_timeout = false;   // Flag to indicate if the LED timer has timed out
+
 ISR(TIMER1_COMPA_vect) {
   led_timeout = true; // Set the flag when the timer expires
 }
@@ -19,46 +23,87 @@ int main(void) {
   // DEBUG:
   Serial.begin(9600); // Enable serial communication
 
-  chooseNextLED(); // Choose and turn on a random LED
-
   while (1) {
-    if (led_timeout) {
-      // DEBUG:
-      Serial.println("LED EXPIRED!");
+    filterIRSignal(); // Filter IR signal
 
-      led_timeout = false; // Reset the flag
-      chooseNextLED(); // Choose and turn on the next LED
-      continue;
+    switch (game_state) {
+      case GAME_START: handleStart(); break;
+      case GAME_PLAYING: hadlePlay(); break;
+      case GAME_OVER: handleGameOver(); break;
+      default: break; // TODO: watchdog reset
     }
-
-    if (!IrReceiver.decode()) {
-      continue; // Continue to wait for IR signal
-    }
-
-    //// IR signal received ////
-
-    // Continue if the decoded data is not available
-    if (!IrReceiver.decodedIRData.decodedRawData) {
-      IrReceiver.resume();
-      continue;
-    }
-  
-    // Check if the pressed button is correct
-    bool match = validateButton(IrReceiver.decodedIRData.command);
-
-    if (match) {
-      Serial.println("SOCRE++");
-    } else {
-      Serial.println("Wrong button pressed!");
-    }
-
-    chooseNextLED(); // Choose and turn on the next LED
-    IrReceiver.resume();
   }
   return 0;
 }
 
-void initLEDs(void) {
+void filterIRSignal() {
+  valid_ir = false; // Reset the valid IR flag
+
+  if (!IrReceiver.decode()) {
+    return; // No IR signal received, exit the function
+  }
+  if (!IrReceiver.decodedIRData.decodedRawData) {
+    IrReceiver.resume();
+    return; // No valid IR data, exit the function
+  }
+  valid_ir = true; // Set the valid IR flag to true
+}
+
+void handleStart() {
+  if (!valid_ir) {
+    return; // No valid IR signal, exit the function
+  }
+
+  if (IrReceiver.decodedIRData.command == BTN_START) {
+    // start the game /////
+    Serial.println("Game started!");
+    game_state = GAME_PLAYING;
+    chooseNextLED(); // Choose and turn on the first LED
+  }
+  IrReceiver.resume();
+}
+
+void hadlePlay() {
+  if (led_timeout) {
+    // DEBUG:
+    Serial.println("LED EXPIRED!");
+
+    led_timeout = false; // Reset the flag
+    chooseNextLED(); // Choose and turn on the next LED
+    return;
+  }
+
+  //// IR signal received ////
+  if (!valid_ir) {
+    return;
+  }
+
+  // Check if the pressed button is correct
+  bool match = validateButton(IrReceiver.decodedIRData.command);
+
+  if (match) {
+    Serial.println("SOCRE++");
+  } else {
+    Serial.println("Wrong button pressed!");
+  }
+
+  chooseNextLED(); // Choose and turn on the next LED
+  IrReceiver.resume();
+}
+
+void handleGameOver() {
+  if (!valid_ir) {
+    return; // No valid IR signal, exit the function
+  }
+
+  if (IrReceiver.decodedIRData.command == BTN_START) {
+    // start the game /////
+    game_state = GAME_START;
+  }
+  IrReceiver.resume();
+}
+
+void initLEDs() {
   DDRB |= (1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3);
   PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
 }
@@ -83,10 +128,11 @@ bool validateButton(uint16_t button) {
   return false;
 }
 
-void chooseNextLED(void) {
+void chooseNextLED() {
   PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3)); // Turn off all LEDs
 
   // TODO: delay before choosing the next LED
+  delay(200); // Delay for 100 milliseconds
 
   switch (nextRand() & 0b11) {
     case 0: PORTB |= (1 << LED0); break;
