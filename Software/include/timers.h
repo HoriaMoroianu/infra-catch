@@ -15,4 +15,9 @@ void initLedTimer(void);
  */
 void startLedTimer(void);
 
+/**
+ * Stops the LED timer by disabling the timer's clock source.
+ */
+void stopLedTimer(void);
+
 #endif // TIMERS_H

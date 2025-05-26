@@ -16,3 +16,7 @@ void startLedTimer(void) {
   TCNT1 = (uint16_t)0; // Reset timer counter
   TCCR1B |= (1 << CS12) | (1 << CS10); // Start timer with prescaler of 1024
 }
+
+void stopLedTimer(void) {
+  TCCR1B &= ~((1 << CS12) | (1 << CS10)); // Stop the timer
+}
