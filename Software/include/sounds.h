@@ -97,6 +97,9 @@
 #define NOTE_Bb4 466
 #define REST 0
 
+#define GOOD_NOTE NOTE_A4
+#define BAD_NOTE  NOTE_A2
+
 /**
  * Start melody for the game
  */
