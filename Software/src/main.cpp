@@ -14,6 +14,7 @@ uint16_t high_score = 0;
 uint16_t score = 0;
 uint8_t lives = 6;
 
+
 ISR(TIMER1_COMPA_vect) {
   led_timeout = true; // Set the flag when the timer expires
 }
@@ -24,12 +25,10 @@ int main(void) {
   initLEDs();       // Set LED pins as output
   initLedTimer();   // Set up the LED timer1
   initLCD();        // Initialize the LCD
+  initBuzz();       // Initialize the buzzer
 
   IrReceiver.begin(IRECV_PIN, ENABLE_LED_FEEDBACK);  // IR receiver setup
   displayStart(); // Display the start message on the LCD
-
-  // DEBUG:
-  Serial.begin(9600); // Enable serial communication
 
   while (1) {
     filterIRSignal(); // Filter IR signal
@@ -38,7 +37,7 @@ int main(void) {
       case GAME_START: handleStart(); break;
       case GAME_PLAYING: hadlePlay(); break;
       case GAME_OVER: handleGameOver(); break;
-      default: break; // TODO: watchdog reset
+      default: break;
     }
   }
   return 0;
@@ -69,9 +68,10 @@ void handleStart() {
     score = 0; // Reset score
     displayScore(lives, score); // Display the score on the LCD
   
+    _delay_ms(1500); // Delay before starting the game
     game_state = GAME_PLAYING;
-    led_timeout = false;
     chooseNextLED();  // Choose and turn on the first LED
+    led_timeout = false; // Reset the LED timeout flag
   }
   IrReceiver.resume();
 }
@@ -79,11 +79,11 @@ void handleStart() {
 
 void hadlePlay() {
   if (!lives) {
-    game_state = GAME_OVER; // If no lives left, end the game
-    stopLedTimer(); // Stop the LED timer
-    PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3)); // Turn off all LEDs
-
-    displayGameOver(score); // Display game over message on the LCD
+    // If no lives left, end the game
+    game_state = GAME_OVER;
+    PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
+  
+    displayGameOver(score);
     IrReceiver.resume();
     return;
   }
@@ -91,8 +91,6 @@ void hadlePlay() {
   if (led_timeout) {
     lives--;
     displayScore(lives, score);
-
-    led_timeout = false; // Reset the flag
     chooseNextLED(); // Choose and turn on the next LED
     return;
   }
@@ -105,24 +103,16 @@ void hadlePlay() {
   // If the start button is pressed, end the game
   if (IrReceiver.decodedIRData.command == BTN_START) {
     game_state = GAME_OVER;
-    stopLedTimer();
-    PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3)); // Turn off all LEDs
+    PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
 
-    displayGameOver(score); // Display game over message on the LCD
+    displayGameOver(score);
     IrReceiver.resume();
     return;
   }
 
-  // Check if the pressed button is correct
-  bool match = validateButton(IrReceiver.decodedIRData.command);
-
-  if (match) {
-    score += 10;
-  } else {
-    lives--;
-  }
+  // Check if the pressed button is correct and update the score
+  validateButton(IrReceiver.decodedIRData.command);
   displayScore(lives, score); // Update the score display on the LCD
-
   chooseNextLED(); // Choose and turn on the next LED
   IrReceiver.resume();
 }
@@ -147,31 +137,36 @@ void initLEDs() {
 }
 
 
-bool validateButton(uint16_t button) {
+void validateButton(uint16_t button) {
   if (button == BTN0 && bit_is_set(PORTB, LED0)) {
     PORTB &= ~(1 << LED0);
-    return true;
+    score += 10;
+    return;
   }
   if (button == BTN1 && bit_is_set(PORTB, LED1)) {
     PORTB &= ~(1 << LED1);
-    return true;
+    score += 10;
+    return;
   }
   if (button == BTN2 && bit_is_set(PORTB, LED2)) {
     PORTB &= ~(1 << LED2);
-    return true;
+    score += 10;
+    return;
   }
   if (button == BTN3 && bit_is_set(PORTB, LED3)) {
     PORTB &= ~(1 << LED3);
-    return true;
+    score += 10;
+    return;
   }
-  return false;
+  lives--; // If the button pressed does not match the LED, decrement lives
 }
 
 void chooseNextLED() {
-  PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3)); // Turn off all LEDs
+  stopLedTimer(); // Stop the LED timer to prevent further interrupts
 
-  // TODO: delay before choosing the next LED
-  delay(200); // Delay for 100 milliseconds
+  // Turn off all LEDs and wait a bit before choosing the next one
+  PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3)); 
+  _delay_ms(250);
 
   switch (nextRand() & 0b11) {
     case 0: PORTB |= (1 << LED0); break;
@@ -180,5 +175,7 @@ void chooseNextLED() {
     case 3: PORTB |= (1 << LED3); break;
     default: PORTB |= (1 << LED0);
   }
+
+  led_timeout = false; // Reset the LED timeout flag
   startLedTimer();  // Restart the LED timer
 }

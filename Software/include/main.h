@@ -57,9 +57,9 @@ void handleGameOver();
 void initLEDs(void);
 
 /**
- * @returns true if the pressed button is correct, false otherwise.
+ * Validates the pressed button against the currently lit LED and updates the score accordingly.
  */
-bool validateButton(uint16_t button);
+void validateButton(uint16_t button);
 
 /**
  * Turns on random LED.

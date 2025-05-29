@@ -1,7 +1,5 @@
 #include "timers.h"
 
-#include <Arduino.h>
-
 uint16_t led_delay = 31250; // 2 seconds at 16MHz with 1024 prescaler
 volatile uint32_t duration = 0; // Duration for the buzzer
 
@@ -19,6 +17,7 @@ ISR(TIMER0_COMPA_vect) {
 void initLedTimer(void) {
   TCCR1A = 0; // Clear control register A
   TCCR1B = 0; // Clear control register B
+  TCNT1 = (uint16_t)0; // Reset timer counter
 
   TCCR1B |= (1 << WGM12); // Set CTC mode
 
