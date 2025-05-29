@@ -1,6 +1,6 @@
 #include "timers.h"
 
-uint16_t led_delay = 31250; // 2 seconds at 16MHz with 1024 prescaler
+uint16_t led_delay = MAX_LED_DELAY;
 volatile uint32_t duration = 0; // Duration for the buzzer
 
 ISR(TIMER0_COMPA_vect) {
@@ -21,6 +21,7 @@ void initLedTimer(void) {
 
   TCCR1B |= (1 << WGM12); // Set CTC mode
 
+  led_delay = MAX_LED_DELAY; // Set initial LED delay to maximum
   OCR1A = led_delay; // Set compare value for 16MHz with 1024 prescaler
   TIMSK1 |= (1 << OCIE1A); // Enable timer compare interrupt
 }
@@ -32,6 +33,14 @@ void startLedTimer(void) {
 
 void stopLedTimer(void) {
   TCCR1B &= ~((1 << CS12) | (1 << CS10)); // Stop the timer
+}
+
+void decreaseLedDelay() {
+  if (led_delay <= MIN_LED_DELAY) {
+    return; // Do not decrease below minimum delay
+  }
+  led_delay -= 300;  // Decrease the delay by ~20ms
+  OCR1A = led_delay; // Update the compare value
 }
 
 void timer_freq_prescale(uint32_t freq, uint8_t *a_ocr, uint8_t *a_prescaler) {

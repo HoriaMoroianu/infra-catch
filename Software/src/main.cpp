@@ -11,6 +11,7 @@ GameState game_state = GAME_START; // Initial game state
 bool valid_ir = false;      // Flag to indicate if a valid IR signal has been received
 bool led_timeout = false;   // Flag to indicate if the LED timer has timed out
 
+// Variables for tracking game state
 uint16_t high_score = 0;
 uint16_t score = 0;
 uint8_t lives = 6;
@@ -20,11 +21,9 @@ ISR(TIMER1_COMPA_vect) {
   led_timeout = true; // Set the flag when the timer expires
 }
 
-
 int main(void) {
   init();           // Initialize the Arduino library for IRRemote
   initLEDs();       // Set LED pins as output
-  initLedTimer();   // Set up the LED timer1
   initLCD();        // Initialize the LCD
   initBuzz();       // Initialize the buzzer
 
@@ -66,8 +65,9 @@ void handleStart() {
   }
 
   if (IrReceiver.decodedIRData.command == BTN_START) {
-    lives = 6; // Reset lives
-    score = 0; // Reset score
+    initLedTimer();   // Reset LED timer1
+    lives = 6;        // Reset lives
+    score = 0;        // Reset score
     displayScore(lives, score); // Display the score on the LCD
     setSeed(extractTimers()); // Set the random seed based on timers
   
@@ -83,12 +83,7 @@ void handleStart() {
 void hadlePlay() {
   if (!lives) {
     // If no lives left, end the game
-    game_state = GAME_OVER;
-    PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
-  
-    displayGameOver(score);
-    playFail(); // Play the fail melody
-    IrReceiver.resume();
+    transitionToGameOver();
     return;
   }
 
@@ -107,12 +102,7 @@ void hadlePlay() {
 
   // If the start button is pressed, end the game
   if (IrReceiver.decodedIRData.command == BTN_START) {
-    game_state = GAME_OVER;
-    PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
-
-    displayGameOver(score);
-    playFail(); // Play the fail melody
-    IrReceiver.resume();
+    transitionToGameOver();
     return;
   }
 
@@ -121,6 +111,23 @@ void hadlePlay() {
   displayScore(lives, score); // Update the score display on the LCD
   chooseNextLED(); // Choose and turn on the next LED
   IrReceiver.resume();
+}
+
+
+void transitionToGameOver() {
+  game_state = GAME_OVER;
+  PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
+
+  if (score > high_score) {
+    high_score = score; // Update high score if current score is higher
+    playWin();          // Play the win melody
+  } else {
+    playFail();         // Play the fail melody
+  }
+
+  displayGameOver(score, high_score);
+  IrReceiver.resume();
+  return;
 }
 
 
@@ -177,7 +184,7 @@ void chooseNextLED() {
 
   // Turn off all LEDs and wait a bit before choosing the next one
   PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3)); 
-  _delay_ms(250);
+  _delay_ms(300);
 
   switch (nextRand() & 0b11) {
     case 0: PORTB |= (1 << LED0); break;
@@ -187,6 +194,7 @@ void chooseNextLED() {
     default: PORTB |= (1 << LED0);
   }
 
+  decreaseLedDelay(); // Decrease the LED delay for the next blink
   led_timeout = false; // Reset the LED timeout flag
   startLedTimer();  // Restart the LED timer
 }

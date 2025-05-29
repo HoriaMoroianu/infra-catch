@@ -4,21 +4,29 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#define MIN_LED_DELAY 3125 // 200ms at 16MHz with 1024 prescaler
+#define MAX_LED_DELAY 31250 // 2 seconds at 16MHz with 1024 prescaler
+
 /**
  * This function sets up timer1 in CTC mode with a prescaler of 1024 for LED 
  * delay intervals and enables the timer compare interrupt.
  */
-void initLedTimer(void);
+void initLedTimer();
 
 /**
  * Starts the LED timer with the specified delay.
  */
-void startLedTimer(void);
+void startLedTimer();
 
 /**
  * Stops the LED timer by disabling the timer's clock source.
  */
-void stopLedTimer(void);
+void stopLedTimer();
+
+/**
+ * Decreases the LED delay for the next blink.
+ */
+void decreaseLedDelay();
 
 /**
  * Calculates the appropriate OCR value and prescaler for a given frequency.

@@ -10,10 +10,8 @@
 #define LED2 PB1
 #define LED3 PB0
 
-#define DECODE_NEC
-
-// Pin for IR receiver
-#define IRECV_PIN 2 
+#define DECODE_NEC   // Protocol for IR receiver
+#define IRECV_PIN 2  // Pin for IR receiver
 
 // Remote control button definitions
 enum IRCode {
@@ -47,6 +45,11 @@ void handleStart();
 void hadlePlay();
 
 /**
+ * Displays game over message on the LCD and plays the end melody.
+ */
+void transitionToGameOver();
+
+/**
  * Handles the game over logic.
  */
 void handleGameOver();
@@ -54,7 +57,7 @@ void handleGameOver();
 /**
  * Initializes the LED pins as output and sets them to low.
  */
-void initLEDs(void);
+void initLEDs();
 
 /**
  * Validates the pressed button against the currently lit LED and updates the score accordingly.
@@ -64,6 +67,6 @@ void validateButton(uint16_t button);
 /**
  * Turns on random LED.
  */
-void chooseNextLED(void);
+void chooseNextLED();
 
 #endif // MAIN_H

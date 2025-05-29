@@ -44,11 +44,12 @@ void displayScore(uint8_t lives, uint16_t score) {
   lcd.print(score);             // Display the current score
 }
 
-void displayGameOver(uint16_t score) {
+void displayGameOver(uint16_t score, uint16_t high_score) {
   lcd.clear();                  // Clear the LCD
-  lcd.setCursor(3, 0);          // Set cursor to the first row
-  lcd.print("GAME OVER");
-  lcd.setCursor(0, 1);          // Set cursor to the second row
-  lcd.print("Score: ");
+  lcd.setCursor(0, 0);          // Set cursor to the first row
+  lcd.print("GAME OVER ");
   lcd.print(score);             // Display the final score
+  lcd.setCursor(0, 1);          // Set cursor to the second row
+  lcd.print("H Score: ");
+  lcd.print(high_score);        // Display the high score
 }
