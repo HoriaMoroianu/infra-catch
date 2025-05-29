@@ -84,3 +84,8 @@ void buzz(uint16_t a_freq, uint16_t a_duration) {
   TIMSK0 |= (1 << OCIE0A); // Enable timer compare interrupt
   TCCR0B = (prescaler & 0b111); // Set prescaler bits in TCCR0B
 }
+
+uint32_t extractTimers() {
+  uint32_t seed = ((uint32_t)TCNT0 << 24) | ((uint32_t)TCNT1H << 16) | ((uint32_t)TCNT2 << 8) | TCNT1L;
+  return seed; // Combine timer values into a single seed value
+}

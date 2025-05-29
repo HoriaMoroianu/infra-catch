@@ -69,6 +69,7 @@ void handleStart() {
     lives = 6; // Reset lives
     score = 0; // Reset score
     displayScore(lives, score); // Display the score on the LCD
+    setSeed(extractTimers()); // Set the random seed based on timers
   
     _delay_ms(1500); // Delay before starting the game
     game_state = GAME_PLAYING;

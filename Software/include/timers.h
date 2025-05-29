@@ -38,4 +38,9 @@ void initBuzz();
  */
 void buzz(uint16_t a_freq, uint16_t a_duration);
 
+/**
+ * Extrat a seed from the timers
+ */
+uint32_t extractTimers();
+
 #endif // TIMERS_H
