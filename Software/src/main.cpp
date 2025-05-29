@@ -2,6 +2,7 @@
 #include "random.h"
 #include "timers.h"
 #include "lcd.h"
+#include "sounds.h"
 
 #include <Arduino.h>
 #include <IRRemote.hpp>
@@ -29,6 +30,7 @@ int main(void) {
 
   IrReceiver.begin(IRECV_PIN, ENABLE_LED_FEEDBACK);  // IR receiver setup
   displayStart(); // Display the start message on the LCD
+  playStart();    // Play the start melody
 
   while (1) {
     filterIRSignal(); // Filter IR signal
@@ -84,6 +86,7 @@ void hadlePlay() {
     PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
   
     displayGameOver(score);
+    playFail(); // Play the fail melody
     IrReceiver.resume();
     return;
   }
@@ -91,6 +94,7 @@ void hadlePlay() {
   if (led_timeout) {
     lives--;
     displayScore(lives, score);
+    buzz(NOTE_F4, 100); // fail sound
     chooseNextLED(); // Choose and turn on the next LED
     return;
   }
@@ -106,6 +110,7 @@ void hadlePlay() {
     PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
 
     displayGameOver(score);
+    playFail(); // Play the fail melody
     IrReceiver.resume();
     return;
   }
@@ -127,6 +132,7 @@ void handleGameOver() {
     // start the game /////
     game_state = GAME_START;
     displayStart(); // Display the start message on the LCD
+    playStart();    // Play the start melody
   }
   IrReceiver.resume();
 }
@@ -136,29 +142,33 @@ void initLEDs() {
   PORTB &= ~((1 << LED0) | (1 << LED1) | (1 << LED2) | (1 << LED3));
 }
 
-
 void validateButton(uint16_t button) {
   if (button == BTN0 && bit_is_set(PORTB, LED0)) {
     PORTB &= ~(1 << LED0);
     score += 10;
+    buzz(NOTE_E5, 100);
     return;
   }
   if (button == BTN1 && bit_is_set(PORTB, LED1)) {
     PORTB &= ~(1 << LED1);
     score += 10;
+    buzz(NOTE_E5, 100);
     return;
   }
   if (button == BTN2 && bit_is_set(PORTB, LED2)) {
     PORTB &= ~(1 << LED2);
     score += 10;
+    buzz(NOTE_E5, 100);
     return;
   }
   if (button == BTN3 && bit_is_set(PORTB, LED3)) {
     PORTB &= ~(1 << LED3);
     score += 10;
+    buzz(NOTE_E5, 100);
     return;
   }
   lives--; // If the button pressed does not match the LED, decrement lives
+  buzz(NOTE_F4, 100); // fail sound
 }
 
 void chooseNextLED() {
